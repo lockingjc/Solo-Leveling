@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>我獨自升級 — 李錦強 (JC) Life OS</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Canvas Confetti 升級特效 -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            hunter: {
+              bg: '#040711',
+              surface: '#090f1f',
+              panel: '#0e172e',
+              border: '#1a2744',
+              neon: '#00f0ff',
+              cyan: '#38bdf8',
+              blue: '#2563eb',
+              purple: '#9333ea',
+              amber: '#f59e0b',
+              glow: 'rgba(0, 240, 255, 0.35)'
+            }
+          },
+          boxShadow: {
+            'neon': '0 0 20px rgba(0, 240, 255, 0.35)',
+            'neon-lg': '0 0 35px rgba(0, 240, 255, 0.55)',
+            'purple-neon': '0 0 25px rgba(147, 51, 234, 0.45)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,450;0,700;1,700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+
+    body {
+      background-color: #040711;
+      color: #e2e8f0;
+      font-family: 'Noto Sans TC', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .font-hud {
+      font-family: 'Chakra Petch', monospace;
+    }
+
+    /* 科技獵人網格背景 */
+    .hunter-grid {
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(0, 240, 255, 0.12) 0%, transparent 60%),
+        linear-gradient(to right, rgba(26, 39, 68, 0.35) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(26, 39, 68, 0.35) 1px, transparent 1px);
+      background-size: 100% 100%, 36px 36px, 36px 36px;
+    }
+
+    /* 霓虹邊框呼吸效果 */
+    .glow-border {
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.05);
+    }
+
+    .glow-border:hover {
+      border-color: rgba(0, 240, 255, 0.6);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.3);
+    }
+
+    /* 獵人視窗掃描線動畫 */
+    @keyframes scanline {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(1000%); }
+    }
+    .scan-line {
+      animation: scanline 8s linear infinite;
+    }
+
+    /* 自訂滾動條 */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #040711;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1a2744;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #00f0ff;
+    }
+  </style>
+</head>
+<body class="hunter-grid min-h-screen pb-28 antialiased overflow-x-hidden">
+
+  <!-- 頂部獵人系統狀態懸浮標頭 -->
+  <header class="sticky top-0 z-40 bg-[#040711]/90 backdrop-blur-md border-b border-hunter-border px-4 py-3">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- 獵人徽章 -->
+        <div id="hunter-rank-badge" class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-700 flex items-center justify-center font-hud font-black text-black text-2xl shadow-neon border border-cyan-300">
+          E
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-black text-white tracking-wide text-base">李錦強 (JC)</span>
+            <span id="rank-title" class="text-[10px] font-bold font-hud px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-500/40">
+              暗影覺醒者
+            </span>
+          </div>
+          <div class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+            <span id="hunter-age" class="font-hud font-semibold text-cyan-300">29 歲</span>
+            <span>·</span>
+            <span class="font-hud">161 cm</span>
+            <span>·</span>
+            <span id="header-weight" class="font-hud text-slate-300">58.4 kg</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 等級與 EXP -->
+      <div class="text-right">
+        <div class="flex items-center justify-end gap-1 font-hud text-xs text-slate-400">
+          <span>等級</span>
+          <span id="hunter-level" class="text-xl font-black text-cyan-400 tracking-wider">LV. 1</span>
+        </div>
+        <div class="text-[10px] font-hud text-slate-400">
+          <span id="current-exp" class="text-cyan-300 font-bold">0</span> / <span id="needed-exp">100</span> EXP
+        </div>
+      </div>
+    </div>
+
+    <!-- 頂部全局經驗進度條 -->
+    <div class="max-w-4xl mx-auto mt-2.5 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+      <div id="header-exp-bar" class="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-hunter-neon transition-all duration-700 shadow-neon" style="width: 0%"></div>
+    </div>
+  </header>
+
+  <!-- 覺醒誓言橫幅 -->
+  <div class="bg-gradient-to-r from-blue-950/40 via-cyan-950/30 to-blue-950/40 border-b border-hunter-border px-4 py-2">
+    <div class="max-w-4xl mx-auto flex items-center justify-center gap-2 text-xs text-cyan-300 text-center font-medium">
+      <i class="ph-bold ph-quotes text-hunter-neon"></i>
+      <span>「我希望我是奇怪的人， 因為這個世界正常人太多了」</span>
+    </div>
+  </div>
+
+  <!-- 主內容容器 -->
+  <main class="max-w-4xl mx-auto p-4 space-y-5">
+
+    <!-- =========================================================================
+         分頁 1：獵人系統主面板 (Dashboard)
+    ========================================================================= -->
+    <section id="tab-dashboard" class="tab-content space-y-5">
+      
+      <!-- 終極進化目標卡 (InBody 目標導引) -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-hunter-panel via-hunter-surface to-[#060a17] glow-border p-5">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <div class="flex items-center gap-2 text-xs font-hud text-hunter-neon tracking-widest uppercase">
+              <i class="ph-bold ph-crosshair text-sm"></i> 終極進化任務 (1.5 年目標)
+            </div>
+            <h2 class="text-xl font-black text-white mt-1">體脂壓制至 13% × 體重推進至 65.0 kg</h2>
+            <p class="text-xs text-slate-400 mt-1">
+              由 InBody 基準 (58.4kg / 體脂 22.4%) 出發，淨增 11.2kg 去脂體重，全面重塑身心維度。
+            </p>
+          </div>
+          <div class="text-right shrink-0">
+            <span class="text-[10px] font-hud text-slate-400 block">截止日期倒數</span>
+            <span class="text-sm font-hud font-bold text-amber-400">2028-04-26 (約 540 天)</span>
+          </div>
+        </div>
+
+        <!-- 進度指標網格 -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-hunter-border/60 font-hud">
+          <div class="bg-hunter-bg/70 p-2.5 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">體重進程</span>
+            <span class="text-lg font-bold text-white">58.4 <span class="text-xs text-slate-500 font-normal">➔ 65 kg</span></span>
+          </div>
+          <div class="bg-hunter-bg/70 p-2.5 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">體脂率目標</span>
+            <span class="text-lg font-bold text-hunter-neon">22.4% <span class="text-xs text-slate-500 font-normal">➔ 13%</span></span>
+          </div>
+          <div class="bg-hunter-bg/70 p-2.5 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">骨骼肌量</span>
+            <span class="text-lg font-bold text-cyan-300">25.6 kg <span class="text-xs text-slate-500 font-normal">(正常偏低)</span></span>
+          </div>
+          <div class="bg-hunter-bg/70 p-2.5 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">每日熱量目標</span>
+            <span class="text-lg font-bold text-amber-300">2,300 <span class="text-xs text-slate-500 font-normal">kcal</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今日戰術推論指引 -->
+      <div class="p-4 rounded-xl bg-hunter-panel/80 border border-hunter-border flex items-start gap-3">
+        <div class="p-2.5 rounded-lg bg-cyan-950/80 text-cyan-400 border border-cyan-800 shrink-0">
+          <i class="ph-bold ph-lightbulb-filament text-xl"></i>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-cyan-300 uppercase tracking-wide">今日系統指引</div>
+          <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+            今日重點在於維持每日 140g 蛋白質補充與晨間水楊酸防曬管理。下肢肌力尚在適應期，建議在 Leg Press（腿推機）專注於離心控制 2 秒，為衝擊 90kg 做足神經儲備。
+          </p>
+        </div>
+      </div>
+
+      <!-- 今日日常獵人任務清單 (互動式打卡 + 即時 EXP 升級) -->
+      <div class="bg-hunter-panel rounded-2xl border border-hunter-border p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-check-square-offset text-hunter-neon text-lg"></i>
+            <h3 class="font-bold text-white text-base">每日契約日常任務</h3>
+          </div>
+          <span id="task-completion-rate" class="text-xs font-hud text-slate-400">0 / 8 完成</span>
+        </div>
+
+        <div id="quest-list" class="space-y-2.5">
+          <!-- 任務動態注入 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         分頁 2：17項訓練動作庫 (Workouts)
+    ========================================================================= -->
+    <section id="tab-workout" class="tab-content hidden space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="ph-bold ph-barbell text-hunter-neon"></i>
+            <span>JC 專屬訓練課表（Upper / Lower 分化）</span>
+          </h2>
+          <p class="text-xs text-slate-400">點選動作即可快速登錄今日最新訓練成績，永久保存 PR 紀錄。</p>
+        </div>
+
+        <!-- Upper / Lower 篩選切換按鈕 -->
+        <div class="flex p-1 rounded-lg bg-hunter-surface border border-hunter-border text-xs font-hud">
+          <button onclick="filterWorkout('all')" id="btn-wf-all" class="px-3 py-1.5 rounded-md text-white bg-blue-600 font-bold transition">全部 17 動作</button>
+          <button onclick="filterWorkout('Upper')" id="btn-wf-upper" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition">上肢 Upper (11)</button>
+          <button onclick="filterWorkout('Lower')" id="btn-wf-lower" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition">下肢 Lower (6)</button>
+        </div>
+      </div>
+
+      <!-- 動作卡片網格 -->
+      <div id="exercise-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 font-hud">
+        <!-- 動作由 JS 渲染 -->
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         分頁 3：臉部升級協議 (Facial Protocol)
+    ========================================================================= -->
+    <section id="tab-face" class="tab-content hidden space-y-4">
+      <div class="p-5 rounded-2xl bg-hunter-panel border border-hunter-border">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="ph-bold ph-sparkle text-hunter-neon"></i>
+          <span>臉部升級三大核心協議</span>
+        </h2>
+        <p class="text-xs text-slate-400 mt-1">針對緊緻俐落輪廓、痘痘粉刺根除、乾燥暗沉擊破量身定制。</p>
+      </div>
+
+      <!-- 三大主攻模組卡片 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <!-- 輪廓緊緻 -->
+        <div class="p-4 rounded-xl bg-hunter-panel border border-hunter-border space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-cyan-950 flex items-center justify-center text-cyan-400 border border-cyan-800">
+            <i class="ph-bold ph-arrows-in-cardinal text-lg"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm">1. 輪廓更緊緻俐落</h3>
+          <ul class="text-xs text-slate-300 space-y-1.5 leading-relaxed">
+            <li>• <strong class="text-cyan-300">晨間冰水拍臉 30s</strong>：快速收縮面部微血管，排除過夜淋巴水腫。</li>
+            <li>• <strong class="text-cyan-300">舌頂上顎 (Mewing)</strong>：日常隨時舌貼上顎、閉唇用鼻呼吸，持續緊緻下顎與口底肌。</li>
+            <li>• <strong class="text-cyan-300">體脂壓制聯動</strong>：當體脂隨課表降至 15%~13%，下顎折角會銳化立體。</li>
+          </ul>
+        </div>
+
+        <!-- 痘痘粉刺清理 -->
+        <div class="p-4 rounded-xl bg-hunter-panel border border-hunter-border space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-950 flex items-center justify-center text-purple-400 border border-purple-800">
+            <i class="ph-bold ph-drop text-lg"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm">2. 痘痘粉刺疏通</h3>
+          <ul class="text-xs text-slate-300 space-y-1.5 leading-relaxed">
+            <li>• <strong class="text-purple-300">2% 水楊酸 (BHA)</strong>：每週一、三、五晚間使用，脂溶性成分直擊毛孔深處溶出皮脂栓。</li>
+            <li>• <strong class="text-purple-300">杜絕過度洗卸</strong>：使用溫和胺基酸洗面乳，不強行去角質以免屏障受損。</li>
+            <li>• <strong class="text-purple-300">枕頭套定期清洗</strong>：每週更換，防止痤瘡桿菌二次感染。</li>
+          </ul>
+        </div>
+
+        <!-- 暗沉乾燥擊破 -->
+        <div class="p-4 rounded-xl bg-hunter-panel border border-hunter-border space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-amber-950 flex items-center justify-center text-amber-400 border border-amber-800">
+            <i class="ph-bold ph-sun text-lg"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm">3. 終結暗沉與乾燥</h3>
+          <ul class="text-xs text-slate-300 space-y-1.5 leading-relaxed">
+            <li>• <strong class="text-amber-300">清爽無油防曬 (SPF50+)</strong>：紫外線是皮膚暗沉與毛孔粗大的頭號殺手，晨間必擦。</li>
+            <li>• <strong class="text-amber-300">神經醯胺修護乳</strong>：夜間修補角質層脂質屏障，鎖住水分，告別外油內乾。</li>
+            <li>• <strong class="text-amber-300">每日飲水 2,500ml</strong>：從細胞內部保持充盈水分。</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 水楊酸每週排程打卡 -->
+      <div class="p-4 rounded-xl bg-hunter-panel border border-hunter-border">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-xs font-bold text-white flex items-center gap-1.5">
+            <i class="ph-bold ph-calendar-check text-hunter-neon"></i> 每週水楊酸毛孔深層疏通排程
+          </div>
+          <span class="text-[10px] text-slate-400">推薦頻率：每週 3 次</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2">
+          <div class="p-3 rounded-lg bg-hunter-bg border border-hunter-border text-center">
+            <span class="text-xs font-hud text-slate-400 block">星期一</span>
+            <span class="text-xs font-bold text-cyan-300">深層代謝</span>
+          </div>
+          <div class="p-3 rounded-lg bg-hunter-bg border border-hunter-border text-center">
+            <span class="text-xs font-hud text-slate-400 block">星期三</span>
+            <span class="text-xs font-bold text-cyan-300">粉刺抑制</span>
+          </div>
+          <div class="p-3 rounded-lg bg-hunter-bg border border-hunter-border text-center">
+            <span class="text-xs font-hud text-slate-400 block">星期五</span>
+            <span class="text-xs font-bold text-cyan-300">角質平整</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         分頁 4：InBody 數據庫與歷史基準
+    ========================================================================= -->
+    <section id="tab-inbody" class="tab-content hidden space-y-4">
+      <div class="p-5 rounded-2xl bg-hunter-panel border border-hunter-border">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="ph-bold ph-identification-card text-hunter-neon"></i>
+              <span>InBody 官方體成分檢測檔案</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">檢測中心：超核心健身中心 / 檢測日期：2026/08/22</p>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-slate-400 block">InBody 評分</span>
+            <span class="text-2xl font-hud font-black text-hunter-neon">72.0 <span class="text-xs text-slate-500 font-normal">/ 100</span></span>
+          </div>
+        </div>
+
+        <!-- 關鍵指標數據矩陣 -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 font-hud text-xs">
+          <div class="p-3 rounded-xl bg-hunter-bg border border-hunter-border">
+            <span class="text-slate-400 text-[10px]">體重 (Weight)</span>
+            <div class="text-lg font-bold text-white mt-0.5">58.4 kg</div>
+            <div class="text-[10px] text-slate-500">標準：46.5 ~ 63.0</div>
+          </div>
+          <div class="p-3 rounded-xl bg-hunter-bg border border-hunter-border">
+            <span class="text-slate-400 text-[10px]">骨骼肌量 (SMM)</span>
+            <div class="text-lg font-bold text-cyan-300 mt-0.5">25.6 kg</div>
+            <div class="text-[10px] text-amber-400">正常偏低 (成長空間大)</div>
+          </div>
+          <div class="p-3 rounded-xl bg-hunter-bg border border-hunter-border">
+            <span class="text-slate-400 text-[10px]">體脂肪重 (BFM)</span>
+            <div class="text-lg font-bold text-amber-300 mt-0.5">13.1 kg</div>
+            <div class="text-[10px] text-slate-500">體脂率：22.4%</div>
+          </div>
+          <div class="p-3 rounded-xl bg-hunter-bg border border-hunter-border">
+            <span class="text-slate-400 text-[10px]">基礎代謝率 (BMR)</span>
+            <div class="text-lg font-bold text-white mt-0.5">1349.0 kcal</div>
+            <div class="text-[10px] text-cyan-400">內臟脂肪：4.0 級</div>
+          </div>
+        </div>
+
+        <!-- 部位別圍度記錄 (Segmental Circumference) -->
+        <div class="mt-4 pt-4 border-t border-hunter-border/60">
+          <div class="text-xs font-bold text-slate-200 mb-2.5 flex items-center gap-1.5">
+            <i class="ph-bold ph-ruler text-hunter-neon"></i> 部位別圍度基準紀錄 (cm)
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-hud text-xs text-slate-300">
+            <div class="p-2 rounded bg-hunter-bg border border-slate-800">頸圍：<span class="font-bold text-white">35.3 cm</span></div>
+            <div class="p-2 rounded bg-hunter-bg border border-slate-800">胸圍：<span class="font-bold text-white">91.9 cm</span></div>
+            <div class="p-2 rounded bg-hunter-bg border border-slate-800">腹圍：<span class="font-bold text-white">80.5 cm</span></div>
+            <div class="p-2 rounded bg-hunter-bg border border-slate-800">臀圍：<span class="font-bold text-white">92.2 cm</span></div>
+            <div class="p-2 rounded bg-hunter-bg border border-slate-800">右臂圍：<span class="font-bold text-white">30.4 cm</span></div>
+            <div class="p-2 rounded bg-hunter-bg border border-slate-800">左臂圍：<span class="font-bold text-white">30.3 cm</span></div>
+            <div class="p-2 rounded bg-hunter-bg border border-slate-800">右大腿：<span class="font-bold text-white">49.2 cm</span></div>
+            <div class="p-2 rounded bg-hunter-bg border border-slate-800">左大腿：<span class="font-bold text-white">49.2 cm</span></div>
+          </div>
+        </div>
+
+        <!-- 下肢 Under 標籤與戰術提醒 -->
+        <div class="mt-4 p-3.5 rounded-xl bg-blue-950/40 border border-blue-900/60 text-xs text-blue-200 space-y-1">
+          <div class="font-bold flex items-center gap-1.5 text-blue-300">
+            <i class="ph-bold ph-shield-check"></i> 系統戰術分析：下肢強化優先級
+          </div>
+          <p>
+            檢測報告中雙下肢肌肉評估為 89.5%~89.8%（標記為 Under）。這證明你的課表安排 Leg Press（現 PR 85kg）與 Leg Curl 是極為精準的突破口，下肢肌肉量提升將是突破 65kg 體重目標的核心基石！
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         分頁 5：數據備份與匯出 (Backup)
+    ========================================================================= -->
+    <section id="tab-backup" class="tab-content hidden space-y-4">
+      <div class="p-5 rounded-2xl bg-hunter-panel border border-hunter-border space-y-3">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <i class="ph-bold ph-database text-hunter-neon"></i>
+          <span>資料安全、備份與永久保存</span>
+        </h2>
+        <p class="text-xs text-slate-400">
+          系統隨時自動同步至你本機瀏覽器的 LocalStorage。你也可以隨時下載備份 JSON 檔案或複製內容。
+        </p>
+
+        <div class="flex flex-wrap gap-3 pt-2">
+          <button onclick="downloadBackup()" class="px-4 py-2 rounded-xl bg-hunter-neon text-black text-xs font-bold font-hud flex items-center gap-2 shadow-neon hover:bg-cyan-300 transition">
+            <i class="ph-bold ph-download-simple text-sm"></i>
+            <span>下載完整資料備份 (.json)</span>
+          </button>
+          <button onclick="copyBackupToClipboard()" class="px-4 py-2 rounded-xl bg-hunter-surface border border-hunter-border text-slate-200 text-xs font-bold font-hud flex items-center gap-2 hover:bg-slate-800 transition">
+            <i class="ph-bold ph-copy text-sm"></i>
+            <span>一鍵複製 JSON 代碼</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 動作登錄 Modal 彈窗 -->
+  <div id="workout-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-hunter-panel border border-hunter-neon/40 rounded-2xl max-w-sm w-full p-5 shadow-neon-lg space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-exercise-name" class="font-bold text-white text-base">動作名稱</h3>
+        <button onclick="closeWorkoutModal()" class="text-slate-400 hover:text-white">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 font-hud text-xs">
+        <div>
+          <label class="text-slate-400 block mb-1">今日訓練負重 (kg)</label>
+          <input type="number" step="0.5" id="modal-weight" class="w-full bg-hunter-bg border border-hunter-border rounded-lg px-3 py-2 text-white text-sm" placeholder="例如：22.5" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="text-slate-400 block mb-1">組數 (Sets)</label>
+            <input type="number" id="modal-sets" class="w-full bg-hunter-bg border border-hunter-border rounded-lg px-3 py-2 text-white text-sm" value="3" />
+          </div>
+          <div>
+            <label class="text-slate-400 block mb-1">每組次數 (Reps)</label>
+            <input type="number" id="modal-reps" class="w-full bg-hunter-bg border border-hunter-border rounded-lg px-3 py-2 text-white text-sm" value="10" />
+          </div>
+        </div>
+        <div>
+          <label class="flex items-center gap-2 cursor-pointer pt-1">
+            <input type="checkbox" id="modal-is-pr" class="rounded bg-hunter-bg border-hunter-border text-hunter-neon focus:ring-0" />
+            <span class="text-amber-400 font-bold">這是新的個人最佳紀錄 (PR)！</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeWorkoutModal()" class="px-4 py-1.5 rounded-lg bg-hunter-surface text-slate-300 text-xs font-bold">取消</button>
+        <button onclick="saveWorkoutModal()" class="px-5 py-1.5 rounded-lg bg-hunter-neon text-black text-xs font-bold shadow-neon">儲存訓練</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 升級震撼 Modal -->
+  <div id="levelup-modal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="relative bg-gradient-to-b from-hunter-panel to-hunter-bg border-2 border-hunter-neon rounded-2xl max-w-sm w-full p-6 text-center shadow-neon-lg space-y-4">
+      <div class="text-4xl text-hunter-neon flex justify-center">
+        <i class="ph-bold ph-lightning"></i>
+      </div>
+      <div>
+        <span class="text-xs font-hud font-bold text-hunter-neon uppercase tracking-widest">System Notification</span>
+        <h2 class="text-2xl font-black text-white mt-1">【能力覺醒：等級提升】</h2>
+        <p class="text-xs text-slate-400 mt-1">恭喜獵人，精神力與肉體強度已突破桎梏！</p>
+      </div>
+
+      <div class="py-3 px-4 rounded-xl bg-hunter-surface border border-hunter-border flex items-center justify-around font-hud">
+        <div>
+          <span class="text-[10px] text-slate-500 block">原等級</span>
+          <span id="modal-old-level" class="text-base font-bold text-slate-400">LV. 1</span>
+        </div>
+        <i class="ph-bold ph-caret-right text-hunter-neon"></i>
+        <div>
+          <span class="text-[10px] text-cyan-400 block">晉升等級</span>
+          <span id="modal-new-level" class="text-2xl font-black text-hunter-neon">LV. 2</span>
+        </div>
+      </div>
+
+      <button onclick="closeLevelupModal()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-600 text-black font-black text-sm shadow-neon">
+        接受力量加冕
+      </button>
+    </div>
+  </div>
+
+  <!-- 底部固定導覽列 (純觸控友善) -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-[#090f1f]/95 backdrop-blur-lg border-t border-hunter-border px-3 py-2">
+    <div class="max-w-md mx-auto grid grid-cols-5 gap-1 text-[10px] font-medium text-slate-400">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center gap-1 py-1 text-hunter-neon">
+        <i class="ph-bold ph-compass text-lg"></i>
+        <span>系統主頁</span>
+      </button>
+      <button onclick="switchTab('workout')" id="nav-workout" class="flex flex-col items-center gap-1 py-1 hover:text-white">
+        <i class="ph-bold ph-barbell text-lg"></i>
+        <span>17動作</span>
+      </button>
+      <button onclick="switchTab('face')" id="nav-face" class="flex flex-col items-center gap-1 py-1 hover:text-white">
+        <i class="ph-bold ph-sparkle text-lg"></i>
+        <span>臉部升級</span>
+      </button>
+      <button onclick="switchTab('inbody')" id="nav-inbody" class="flex flex-col items-center gap-1 py-1 hover:text-white">
+        <i class="ph-bold ph-identification-card text-lg"></i>
+        <span>InBody</span>
+      </button>
+      <button onclick="switchTab('backup')" id="nav-backup" class="flex flex-col items-center gap-1 py-1 hover:text-white">
+        <i class="ph-bold ph-database text-lg"></i>
+        <span>備份</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- =========================================================================
+       JavaScript 核心業務引擎
+  ========================================================================= -->
+  <script>
+    // 預設資料種子
+    const DEFAULT_DATA = {
+      profile: {
+        name: "李錦強 (JC)",
+        birthDate: "1997-07-31",
+        height: 161.0,
+        weight: 58.4,
+        bodyFat: 22.4,
+        smm: 25.6,
+        targetWeight: 65.0,
+        targetBodyFat: 13.0,
+        targetDate: "2028-04-26",
+        totalExp: 150
+      },
+      tasks: [
+        { id: "q1", title: "晨間儀式：冷水拍臉 30s 消腫 ＋ 補水 500ml", exp: 20, tag: "臉部", diff: "E", done: false },
+        { id: "q2", title: "臉部防禦：出門塗抹清爽無油防曬 (SPF50+)", exp: 20, tag: "護膚", diff: "E", done: false },
+        { id: "q3", title: "營養達標：蛋白質 140g 與 2,300 kcal 攝取", exp: 50, tag: "飲食", diff: "D", done: false },
+        { id: "q4", title: "姿態管理：日常保持舌頂上顎 (Mewing) 緊緻輪廓", exp: 20, tag: "輪廓", diff: "E", done: false },
+        { id: "q5", title: "毛孔深層疏通：2% 水楊酸棉片清理 (週1/3/5)", exp: 50, tag: "護膚", diff: "D", done: false },
+        { id: "q6", title: "動作挑戰：Cable Pushdown 達成 29.5kg × 12 × 3", exp: 130, tag: "突破", diff: "C", done: false },
+        { id: "q7", title: "下肢強化：Leg Press 突破 90kg × 10 下，脫離 Under", exp: 350, tag: "突破", diff: "B", done: false },
+        { id: "q8", title: "暗影離線協議：22:45 數位斷聯，23:30 熄燈睡滿 8 小時", exp: 60, tag: "恢復", diff: "D", done: false }
+      ],
+      exercises: [
+        // Upper 11 動作
+        { id: "u1", category: "Upper", name: "上斜啞鈴臥推", pr: "22.5kg × 12下", recent: "22.5kg × 10 × 3" },
+        { id: "u2", category: "Upper", name: "Cable Fly", pr: "20kg × 12下", recent: "20kg × 12, 8, 10" },
+        { id: "u3", category: "Upper", name: "Cable Lateral Raise", pr: "11.5kg × 12 × 3", recent: "11.5kg × 12 × 3" },
+        { id: "u4", category: "Upper", name: "啞鈴後三角飛鳥", pr: "最高 5kg / 穩定 2.5kg × 12 × 3", recent: "2.5kg × 12 × 3" },
+        { id: "u5", category: "Upper", name: "Lat Pulldown (高位下拉)", pr: "34kg × 10 × 3", recent: "34kg × 10 × 3" },
+        { id: "u6", category: "Upper", name: "單邊划船", pr: "12.5kg × 8 × 3", recent: "12.5kg × 8 × 3" },
+        { id: "u7", category: "Upper", name: "二頭彎舉", pr: "15kg × 10 × 3 (無借力)", recent: "15kg × 10 × 3" },
+        { id: "u8", category: "Upper", name: "Reverse Curl", pr: "10kg × 12 × 3", recent: "10kg × 10 × 3" },
+        { id: "u9", category: "Upper", name: "Straight Bar Cable Wrist Curl", pr: "11.5kg × 15 × 3", recent: "11.5kg × 15 × 3" },
+        { id: "u10", category: "Upper", name: "Skull Crusher", pr: "15kg × 12 × 3", recent: "15kg × 12 × 3" },
+        { id: "u11", category: "Upper", name: "Cable Triceps Pushdown", pr: "29.5kg × 12 × 2", recent: "29.5kg × 10 × 3" },
+        // Lower 6 動作
+        { id: "l1", category: "Lower", name: "Leg Press (腿推機)", pr: "85kg × 10 × 3", recent: "85kg × 10 × 3" },
+        { id: "l2", category: "Lower", name: "Leg Curl (腿彎舉)", pr: "基準 34kg × 12 × 3", recent: "34kg × 12 × 3" },
+        { id: "l3", category: "Lower", name: "Hip Abductor (髖外展)", pr: "36kg × 12 × 3", recent: "36kg × 12 × 3 (加強離心)" },
+        { id: "l4", category: "Lower", name: "Hip Adductor (髖內收)", pr: "36kg × 12 × 3", recent: "36kg × 12, 10, 10" },
+        { id: "l5", category: "Lower", name: "Cable Ab Pulldown", pr: "35kg × 15 × 4", recent: "35kg × 12 × 3" },
+        { id: "l6", category: "Lower", name: "Leg Raise (懸垂抬腿)", pr: "自體重 × 15 × 3", recent: "自體重 × 15 × 3" }
+      ]
+    };
+
+    // 系統狀態
+    let appState = JSON.parse(localStorage.getItem("solo_leveling_jc_v1")) || DEFAULT_DATA;
+    let selectedExerciseId = null;
+
+    // 動態年齡計算
+    function getAge(birthDateStr) {
+      const birth = new Date(birthDateStr);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      return age;
+    }
+
+    // 等級與階級演算法
+    function calcLevel(exp) {
+      const level = Math.floor(Math.sqrt(exp / 100)) + 1;
+      const baseExp = Math.pow(level - 1, 2) * 100;
+      const nextExp = Math.pow(level, 2) * 100;
+      const curLevelExp = exp - baseExp;
+      const neededInLevel = nextExp - baseExp;
+      const pct = Math.min(100, Math.floor((curLevelExp / neededInLevel) * 100));
+
+      let rank = "E";
+      let rankTitle = "暗影覺醒者";
+      if (level >= 30) { rank = "S"; rankTitle = "國家權力級君王"; }
+      else if (level >= 20) { rank = "A"; rankTitle = "高階暗影統領"; }
+      else if (level >= 12) { rank = "B"; rankTitle = "暗影精英獵人"; }
+      else if (level >= 6) { rank = "C"; rankTitle = "進階覺醒者"; }
+      else if (level >= 3) { rank = "D"; rankTitle = "初階獵人"; }
+
+      return { level, rank, rankTitle, curLevelExp, neededInLevel, pct };
+    }
+
+    // 儲存狀態至 LocalStorage
+    function saveState() {
+      localStorage.setItem("solo_leveling_jc_v1", JSON.stringify(appState));
+      renderHeader();
+      renderTasks();
+      renderExercises();
+    }
+
+    // 渲染頂部狀態列
+    function renderHeader() {
+      const { level, rank, rankTitle, curLevelExp, neededInLevel, pct } = calcLevel(appState.profile.totalExp);
+      
+      document.getElementById('hunter-rank-badge').innerText = rank;
+      document.getElementById('rank-title').innerText = rankTitle;
+      document.getElementById('hunter-age').innerText = `${getAge(appState.profile.birthDate)} 歲`;
+      document.getElementById('hunter-level').innerText = `LV. ${level}`;
+      document.getElementById('current-exp').innerText = curLevelExp;
+      document.getElementById('needed-exp').innerText = neededInLevel;
+      document.getElementById('header-exp-bar').style.width = `${pct}%`;
+      document.getElementById('header-weight').innerText = `${appState.profile.weight} kg`;
+    }
+
+    // 渲染任務
+    function renderTasks() {
+      const list = document.getElementById('quest-list');
+      list.innerHTML = '';
+      let completedCount = 0;
+
+      appState.tasks.forEach(t => {
+        if (t.done) completedCount++;
+        const card = document.createElement('div');
+        card.className = `flex items-center justify-between p-3.5 rounded-xl border transition-all cursor-pointer ${
+          t.done 
+            ? 'bg-hunter-surface/50 border-slate-800 opacity-60' 
+            : 'bg-hunter-surface border-hunter-border hover:border-hunter-neon/40 shadow-sm'
+        }`;
+        card.onclick = () => toggleTask(t.id);
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded-md flex items-center justify-center border ${
+              t.done ? 'bg-hunter-neon border-hunter-neon text-black' : 'border-slate-600 bg-hunter-bg'
+            }">
+              ${t.done ? '<i class="ph-bold ph-check text-xs"></i>' : ''}
+            </div>
+            <div>
+              <div class="text-xs font-bold ${t.done ? 'line-through text-slate-500' : 'text-slate-200'}">
+                ${t.title}
+              </div>
+              <div class="text-[10px] text-slate-500 font-hud flex items-center gap-1.5 mt-0.5">
+                <span class="bg-slate-800/80 px-1.5 py-0.2 rounded text-slate-400">${t.tag}</span>
+                <span class="text-cyan-400 font-bold">${t.diff} 級契約</span>
+              </div>
+            </div>
+          </div>
+          <div class="text-xs font-hud font-bold text-hunter-neon shrink-0">
+            +${t.exp} EXP
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      document.getElementById('task-completion-rate').innerText = `${completedCount} / ${appState.tasks.length} 完成`;
+    }
+
+    // 任務勾選切換
+    function toggleTask(id) {
+      const oldLevel = calcLevel(appState.profile.totalExp).level;
+      const task = appState.tasks.find(t => t.id === id);
+      if (!task) return;
+
+      task.done = !task.done;
+      if (task.done) {
+        appState.profile.totalExp += task.exp;
+      } else {
+        appState.profile.totalExp = Math.max(0, appState.profile.totalExp - task.exp);
+      }
+
+      saveState();
+
+      // 檢查是否升級
+      const newLevel = calcLevel(appState.profile.totalExp).level;
+      if (newLevel > oldLevel) {
+        triggerLevelUp(oldLevel, newLevel);
+      }
+    }
+
+    // 升級震撼彈窗
+    function triggerLevelUp(oldLv, newLv) {
+      document.getElementById('modal-old-level').innerText = `LV. ${oldLv}`;
+      document.getElementById('modal-new-level').innerText = `LV. ${newLv}`;
+      document.getElementById('levelup-modal').classList.remove('hidden');
+
+      // 施放噴花粒子
+      if (window.confetti) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#00f0ff', '#38bdf8', '#3b82f6', '#f59e0b']
+        });
+      }
+    }
+
+    function closeLevelupModal() {
+      document.getElementById('levelup-modal').classList.add('hidden');
+    }
+
+    // 渲染 17 動作卡片
+    let currentFilter = 'all';
+    function renderExercises() {
+      const container = document.getElementById('exercise-grid');
+      container.innerHTML = '';
+
+      const filtered = appState.exercises.filter(ex => {
+        if (currentFilter === 'all') return true;
+        return ex.category === currentFilter;
+      });
+
+      filtered.forEach(ex => {
+        const card = document.createElement('div');
+        card.className = 'p-3.5 rounded-xl bg-hunter-panel border border-hunter-border hover:border-cyan-500/40 transition cursor-pointer flex flex-col justify-between';
+        card.onclick = () => openWorkoutModal(ex.id);
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-xs font-bold text-white">${ex.name}</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                ex.category === 'Upper' ? 'bg-blue-950 text-blue-400 border border-blue-800' : 'bg-purple-950 text-purple-400 border border-purple-800'
+              }">${ex.category}</span>
+            </div>
+            <div class="text-[11px] bg-hunter-bg p-2 rounded-lg space-y-1">
+              <div class="flex justify-between">
+                <span class="text-slate-500">目前 PR：</span>
+                <span class="text-hunter-neon font-bold">${ex.pr}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-500">最近紀錄：</span>
+                <span class="text-slate-300">${ex.recent}</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-2 text-right">
+            <span class="text-[10px] text-cyan-400 hover:underline">點擊記錄今日成績 →</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterWorkout(cat) {
+      currentFilter = cat;
+      document.getElementById('btn-wf-all').className = cat === 'all' ? 'px-3 py-1.5 rounded-md text-white bg-blue-600 font-bold transition' : 'px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition';
+      document.getElementById('btn-wf-upper').className = cat === 'Upper' ? 'px-3 py-1.5 rounded-md text-white bg-blue-600 font-bold transition' : 'px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition';
+      document.getElementById('btn-wf-lower').className = cat === 'Lower' ? 'px-3 py-1.5 rounded-md text-white bg-blue-600 font-bold transition' : 'px-3 py-1.5 rounded-md text-slate-400 hover:text-white transition';
+      renderExercises();
+    }
+
+    // 打開動作編輯 Modal
+    function openWorkoutModal(id) {
+      selectedExerciseId = id;
+      const ex = appState.exercises.find(e => e.id === id);
+      if (!ex) return;
+      document.getElementById('modal-exercise-name').innerText = `記錄：${ex.name}`;
+      document.getElementById('modal-weight').value = '';
+      document.getElementById('modal-is-pr').checked = false;
+      document.getElementById('workout-modal').classList.remove('hidden');
+    }
+
+    function closeWorkoutModal() {
+      document.getElementById('workout-modal').classList.add('hidden');
+    }
+
+    function saveWorkoutModal() {
+      const ex = appState.exercises.find(e => e.id === selectedExerciseId);
+      if (!ex) return;
+
+      const w = document.getElementById('modal-weight').value;
+      const s = document.getElementById('modal-sets').value;
+      const r = document.getElementById('modal-reps').value;
+      const isPr = document.getElementById('modal-is-pr').checked;
+
+      if (w) {
+        ex.recent = `${w}kg × ${r} × ${s}`;
+        if (isPr) {
+          ex.pr = `${w}kg × ${r}下 (新PR!)`;
+          appState.profile.totalExp += 50; // PR 獎勵經驗
+        }
+        saveState();
+      }
+      closeWorkoutModal();
+    }
+
+    // 分頁切換
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+      // 導覽標籤高亮
+      ['dashboard', 'workout', 'face', 'inbody', 'backup'].forEach(t => {
+        const btn = document.getElementById(`nav-${t}`);
+        if (t === tabId) {
+          btn.className = 'flex flex-col items-center gap-1 py-1 text-hunter-neon';
+        } else {
+          btn.className = 'flex flex-col items-center gap-1 py-1 hover:text-white text-slate-400';
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 備份功能
+    function downloadBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", `Solo_Leveling_JC_Backup_${new Date().toISOString().slice(0, 10)}.json`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function copyBackupToClipboard() {
+      const str = JSON.stringify(appState, null, 2);
+      navigator.clipboard.writeText(str).then(() => {
+        alert("完整系統數據已複製到剪貼簿！");
+      });
+    }
+
+    // 初始化載入
+    window.onload = function() {
+      saveState();
+    };
+  </script>
+</body>
+</html>
